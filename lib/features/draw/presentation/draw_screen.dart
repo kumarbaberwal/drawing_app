@@ -9,7 +9,7 @@ class DrawScreen extends StatefulWidget {
 }
 
 class _DrawScreenState extends State<DrawScreen> {
-  List<Stroke> _strokes = [];
+  final List<Stroke> _strokes = [];
   List<Stroke> _redoStrokes = [];
   List<Offset> _currentPoints = [];
   Color _selectedColor = Colors.black;
@@ -23,39 +23,137 @@ class _DrawScreenState extends State<DrawScreen> {
       ),
       body: Column(
         children: [
-          GestureDetector(
-            onPanStart: (details) {
-              setState(() {
-                _currentPoints.add(details.localPosition);
-              });
-            },
-            onPanUpdate: (details) {
-              setState(() {
-                _currentPoints.add(details.localPosition);
-              });
-            },
-            onPanEnd: (details) {
-              setState(() {
-                _strokes.add(Stroke(
-                  points: List.from(_currentPoints),
-                  color: _selectedColor,
-                  brushSize: _brushSize,
-                ));
-                _currentPoints = [];
-                _redoStrokes = [];
-              });
-            },
-            child: CustomPaint(
-              painter: DrawPainter(
-                strokes: _strokes,
-                currentPoints: _currentPoints,
-                selectedColor: _selectedColor,
-                currentBrushSize: _brushSize,
+          Expanded(
+            child: GestureDetector(
+              onPanStart: (details) {
+                setState(() {
+                  _currentPoints.add(details.localPosition);
+                });
+              },
+              onPanUpdate: (details) {
+                setState(() {
+                  _currentPoints.add(details.localPosition);
+                });
+              },
+              onPanEnd: (details) {
+                setState(() {
+                  _strokes.add(Stroke(
+                    points: List.from(_currentPoints),
+                    color: _selectedColor,
+                    brushSize: _brushSize,
+                  ));
+                  _currentPoints = [];
+                  _redoStrokes = [];
+                });
+              },
+              child: CustomPaint(
+                painter: DrawPainter(
+                  strokes: _strokes,
+                  currentPoints: _currentPoints,
+                  selectedColor: _selectedColor,
+                  currentBrushSize: _brushSize,
+                ),
+                size: Size.infinite,
               ),
-              size: Size.infinite,
             ),
+          ),
+          _buildToolBar(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToolBar() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: Colors.grey[200],
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            onPressed: _strokes.isNotEmpty
+                ? () {
+                    setState(() {
+                      _redoStrokes.add(_strokes.removeLast());
+                    });
+                  }
+                : null,
+            icon: Icon(Icons.undo),
+          ),
+          IconButton(
+            onPressed: _redoStrokes.isNotEmpty
+                ? () {
+                    setState(() {
+                      _strokes.add(_redoStrokes.removeLast());
+                    });
+                  }
+                : null,
+            icon: Icon(Icons.redo),
+          ),
+
+          // brush size drop down
+          DropdownButton(
+            value: _brushSize,
+            items: [
+              DropdownMenuItem(
+                value: 2.0,
+                child: Text("small"),
+              ),
+              DropdownMenuItem(
+                value: 4.0,
+                child: Text("medium"),
+              ),
+              DropdownMenuItem(
+                value: 6.0,
+                child: Text("large"),
+              ),
+              DropdownMenuItem(
+                value: 8.0,
+                child: Text("larger"),
+              ),
+            ],
+            onChanged: (value) {
+              setState(() {
+                _brushSize = value!;
+              });
+            },
+          ),
+
+          // color picker
+          Row(
+            children: [
+              _buildColorButton(Colors.black),
+              _buildColorButton(Colors.red),
+              _buildColorButton(Colors.blue),
+              _buildColorButton(Colors.green),
+            ],
           )
         ],
+      ),
+    );
+  }
+
+  Widget _buildColorButton(Color color) {
+    return GestureDetector(
+      onTap: () {
+        setState(
+          () {
+            _selectedColor = color;
+          },
+        );
+      },
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 4),
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: _selectedColor == color ? Colors.grey : Colors.transparent,
+            width: 2,
+          ),
+        ),
       ),
     );
   }
@@ -76,18 +174,36 @@ class DrawPainter extends CustomPainter {
   });
   @override
   void paint(Canvas canvas, Size size) {
+    // draw complete stroke
     for (final stroke in strokes) {
       final paint = Paint()
         ..color = stroke.color
         ..strokeCap = StrokeCap.round
         ..strokeWidth = stroke.brushSize;
 
-        for (int i = 0, i < stroke.)
+      for (int i = 0; i < stroke.points.length - 1; i++) {
+        if (stroke.points[i] != Offset.zero &&
+            stroke.points[i + 1] != Offset.zero) {
+          canvas.drawLine(stroke.points[i], stroke.points[i + 1], paint);
+        }
+      }
+    }
+
+    // draw the current active stroke
+    final paint = Paint()
+      ..color = selectedColor
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = currentBrushSize;
+    for (int i = 0; i < currentPoints.length - 1; i++) {
+      if (currentPoints[i] != Offset.zero &&
+          currentPoints[i + 1] != Offset.zero) {
+        canvas.drawLine(currentPoints[i], currentPoints[i + 1], paint);
+      }
     }
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    throw UnimplementedError();
+    return true;
   }
 }
