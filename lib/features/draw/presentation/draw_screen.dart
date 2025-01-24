@@ -1,5 +1,6 @@
 import 'package:drawing_app/features/draw/models/stroke.dart';
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 class DrawScreen extends StatefulWidget {
   const DrawScreen({super.key});
@@ -14,6 +15,28 @@ class _DrawScreenState extends State<DrawScreen> {
   List<Offset> _currentPoints = [];
   Color _selectedColor = Colors.black;
   double _brushSize = 4.0;
+  late Box<List<Stroke>> _drawingBox;
+
+  @override
+  void initState() {
+    _initializeHive();
+    super.initState();
+  }
+
+  _initializeHive() {
+    _drawingBox = Hive.box<List<Stroke>>('drawings');
+  }
+
+  // Future<void> _saveDrawing(){}
+
+  void _showDialog() {}
+
+  @override
+  void dispose() {
+    Hive.close();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -59,6 +82,10 @@ class _DrawScreenState extends State<DrawScreen> {
           ),
           _buildToolBar(),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showDialog,
+        child: Icon(Icons.save),
       ),
     );
   }
@@ -177,14 +204,15 @@ class DrawPainter extends CustomPainter {
     // draw complete stroke
     for (final stroke in strokes) {
       final paint = Paint()
-        ..color = stroke.color
+        ..color = stroke.strokeColor
         ..strokeCap = StrokeCap.round
         ..strokeWidth = stroke.brushSize;
 
+      final points = stroke.offsetPoints;
+
       for (int i = 0; i < stroke.points.length - 1; i++) {
-        if (stroke.points[i] != Offset.zero &&
-            stroke.points[i + 1] != Offset.zero) {
-          canvas.drawLine(stroke.points[i], stroke.points[i + 1], paint);
+        if (points[i] != Offset.zero && points[i + 1] != Offset.zero) {
+          canvas.drawLine(points[i], points[i + 1], paint);
         }
       }
     }
