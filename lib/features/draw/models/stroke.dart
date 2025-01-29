@@ -16,13 +16,24 @@ class Stroke extends HiveObject {
   final double brushSize;
 
   Stroke({
-    required List<Offset> points,
-    required Color color,
+    required this.points,
+    required this.color,
     required this.brushSize,
-  })  : points = points.map((e) => CustomOffset.fromOffset(e)).toList(),
-        color = color.value;
+  });
 
   List<Offset> get offsetPoints => points.map((e) => e.toOffset()).toList();
 
   Color get strokeColor => Color(color);
+
+  factory Stroke.fromOffsets({
+    required List<Offset> points,
+    required Color color,
+    required double brushSize,
+  }) {
+    return Stroke(
+      points: points.map((e) => CustomOffset.fromOffset(e)).toList(),
+      color: color.value,
+      brushSize: brushSize,
+    );
+  }
 }

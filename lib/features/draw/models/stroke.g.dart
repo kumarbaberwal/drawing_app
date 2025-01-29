@@ -17,8 +17,8 @@ class StrokeAdapter extends TypeAdapter<Stroke> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return Stroke(
-      points: (fields[0] as List).cast<Offset>(),
-      color: fields[1] as Color,
+      points: (fields[0] as List).cast<CustomOffset>(),
+      color: fields[1] as int,
       brushSize: fields[2] as double,
     );
   }

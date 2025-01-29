@@ -23,13 +23,53 @@ class _DrawScreenState extends State<DrawScreen> {
     super.initState();
   }
 
-  _initializeHive() {
+  Future<void> _initializeHive() async {
     _drawingBox = Hive.box<List<Stroke>>('drawings');
   }
 
-  // Future<void> _saveDrawing(){}
+  Future<void> _saveDrawing(String name) async {
+    await _drawingBox.put(name, _strokes);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Drawing $name Saved!!!"),
+      ),
+    );
+  }
 
-  void _showDialog() {}
+  void _showSaveDialog() {
+    final TextEditingController _controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Save Drawing"),
+          content: TextField(
+            controller: _controller,
+            decoration:
+                const InputDecoration(hintText: "Enter your drawing name"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                final name = _controller.text.trim();
+                if (name.isNotEmpty) {
+                  _saveDrawing(name);
+                  Navigator.of(context).pop();
+                }
+              },
+              child: Text("Save"),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   void dispose() {
@@ -60,7 +100,7 @@ class _DrawScreenState extends State<DrawScreen> {
               },
               onPanEnd: (details) {
                 setState(() {
-                  _strokes.add(Stroke(
+                  _strokes.add(Stroke.fromOffsets(
                     points: List.from(_currentPoints),
                     color: _selectedColor,
                     brushSize: _brushSize,
@@ -84,7 +124,7 @@ class _DrawScreenState extends State<DrawScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showDialog,
+        onPressed: _showSaveDialog,
         child: Icon(Icons.save),
       ),
     );
