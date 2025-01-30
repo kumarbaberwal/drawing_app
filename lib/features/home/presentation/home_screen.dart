@@ -24,6 +24,42 @@ class _HomeScreenState extends State<HomeScreen> {
     _drawingBox = Hive.box<List<Stroke>>('drawings');
   }
 
+  void _deleteDrawing(String name) async {
+    final confirm = await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Delete Drawing"),
+          content: Text("Are you sure you want to delete $name"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+              child: Text("Delete"),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      _drawingBox.delete(name);
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Drawing $name Deleted!!!"),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final drawingNames = _drawingBox.keys.cast<String>().toList();
@@ -46,27 +82,44 @@ class _HomeScreenState extends State<HomeScreen> {
               itemCount: drawingNames.length,
               itemBuilder: (context, index) {
                 final name = drawingNames[index];
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      '/draw',
-                      arguments: name,
-                    );
-                  },
-                  child: Card(
-                    elevation: 4,
-                    child: Center(
-                      child: Text(
-                        name,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                return Stack(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/draw',
+                          arguments: name,
+                        );
+                      },
+                      child: Card(
+                        elevation: 4,
+                        child: Center(
+                          child: Text(
+                            name,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: IconButton(
+                        onPressed: () {
+                          _deleteDrawing(name);
+                        },
+                        icon: Icon(
+                          Icons.delete,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               },
             ),
