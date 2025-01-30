@@ -1,6 +1,8 @@
+import 'dart:developer';
+
 import 'package:drawing_app/features/draw/models/stroke.dart';
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:hive/hive.dart';
 
 class DrawScreen extends StatefulWidget {
   const DrawScreen({super.key});
@@ -10,25 +12,41 @@ class DrawScreen extends StatefulWidget {
 }
 
 class _DrawScreenState extends State<DrawScreen> {
-  final List<Stroke> _strokes = [];
+  List<Stroke> _strokes = [];
   List<Stroke> _redoStrokes = [];
   List<Offset> _currentPoints = [];
   Color _selectedColor = Colors.black;
   double _brushSize = 4.0;
   late Box<List<Stroke>> _drawingBox;
+  String? _drawingName;
 
   @override
   void initState() {
-    _initializeHive();
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) {
+        _initializeHive();
+      },
+    );
     super.initState();
   }
 
   Future<void> _initializeHive() async {
     _drawingBox = Hive.box<List<Stroke>>('drawings');
+
+    final name = ModalRoute.of(context)?.settings.arguments as String?;
+    if (name != null) {
+      final rawData = _drawingBox.get(name);
+      log("Raw Data Type :- ");
+      log(rawData.runtimeType.toString());
+      setState(() {
+        _drawingName = name;
+        _strokes = (rawData as List<dynamic>?)?.cast<Stroke>() ?? [];
+      });
+    }
   }
 
   Future<void> _saveDrawing(String name) async {
-    await _drawingBox.put(name, _strokes);
+    _drawingBox.put(name, _strokes);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text("Drawing $name Saved!!!"),
@@ -59,6 +77,9 @@ class _DrawScreenState extends State<DrawScreen> {
               onPressed: () {
                 final name = _controller.text.trim();
                 if (name.isNotEmpty) {
+                  setState(() {
+                    _drawingName = name;
+                  });
                   _saveDrawing(name);
                   Navigator.of(context).pop();
                 }
@@ -72,17 +93,11 @@ class _DrawScreenState extends State<DrawScreen> {
   }
 
   @override
-  void dispose() {
-    Hive.close();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: Text("Draw Your Dream"),
+        title: Text(_drawingName ?? "Draw Your Dream"),
       ),
       body: Column(
         children: [
