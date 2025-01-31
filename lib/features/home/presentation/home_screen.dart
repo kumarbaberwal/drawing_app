@@ -3,8 +3,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
-import '../../draw/models/stroke.dart';
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
