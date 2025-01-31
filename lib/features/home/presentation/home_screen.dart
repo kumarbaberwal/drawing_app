@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
@@ -11,7 +13,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late Box<List<Stroke>> _drawingBox;
+  late Box<Map<dynamic, dynamic>> _drawingBox;
 
   @override
   void initState() {
@@ -21,7 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _initializeHive() async {
     // await Hive.deleteFromDisk();
-    _drawingBox = Hive.box<List<Stroke>>('drawings');
+    _drawingBox = Hive.box<Map<dynamic, dynamic>>('drawings');
   }
 
   void _deleteDrawing(String name) async {
@@ -67,6 +69,19 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         centerTitle: true,
         title: Text("My Drawings"),
+        actions: [
+          IconButton(
+            onPressed: () async {
+              await _drawingBox.deleteFromDisk();
+              await Hive.openBox<Map<dynamic, dynamic>>('drawings');
+              setState(() {});
+            },
+            icon: Icon(
+              Icons.delete,
+              // color: Colors.red,
+            ),
+          ),
+        ],
       ),
       body: drawingNames.isEmpty
           ? Center(
@@ -82,6 +97,9 @@ class _HomeScreenState extends State<HomeScreen> {
               itemCount: drawingNames.length,
               itemBuilder: (context, index) {
                 final name = drawingNames[index];
+                final data = _drawingBox.get(name) as Map;
+                final thumbnail = data['thumbnail'] as Uint8List;
+
                 return Stack(
                   children: [
                     GestureDetector(
@@ -94,15 +112,27 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                       child: Card(
                         elevation: 4,
-                        child: Center(
-                          child: Text(
-                            name,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: Image.memory(
+                                thumbnail,
+                                fit: BoxFit.cover,
+                              ),
                             ),
-                          ),
+                            Padding(
+                              padding: EdgeInsets.all(5),
+                              child: Text(
+                                name,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -124,8 +154,9 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pushNamed(context, '/draw');
+        onPressed: () async {
+          await Navigator.pushNamed(context, '/draw');
+          setState(() {});
         },
         child: Icon(Icons.draw),
       ),

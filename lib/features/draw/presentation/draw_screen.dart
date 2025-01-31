@@ -1,6 +1,8 @@
 import 'dart:developer';
+import 'dart:typed_data';
 
 import 'package:drawing_app/features/draw/models/stroke.dart';
+import 'package:drawing_app/features/draw/utils/thumbnail_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
@@ -17,7 +19,7 @@ class _DrawScreenState extends State<DrawScreen> {
   List<Offset> _currentPoints = [];
   Color _selectedColor = Colors.black;
   double _brushSize = 4.0;
-  late Box<List<Stroke>> _drawingBox;
+  late Box<Map<dynamic, dynamic>> _drawingBox;
   String? _drawingName;
 
   @override
@@ -31,7 +33,7 @@ class _DrawScreenState extends State<DrawScreen> {
   }
 
   Future<void> _initializeHive() async {
-    _drawingBox = Hive.box<List<Stroke>>('drawings');
+    _drawingBox = Hive.box<Map<dynamic, dynamic>>('drawings');
 
     final name = ModalRoute.of(context)?.settings.arguments as String?;
     if (name != null) {
@@ -40,13 +42,19 @@ class _DrawScreenState extends State<DrawScreen> {
       log(rawData.runtimeType.toString());
       setState(() {
         _drawingName = name;
-        _strokes = (rawData as List<dynamic>?)?.cast<Stroke>() ?? [];
+        _strokes =
+            (rawData?['strokes'] as List<dynamic>?)?.cast<Stroke>() ?? [];
       });
     }
   }
 
   Future<void> _saveDrawing(String name) async {
-    _drawingBox.put(name, _strokes);
+    // Generate thumbnail
+    final Uint8List thumbnail = await generateThumbnail(_strokes, 200, 200);
+    _drawingBox.put(name, {
+      'strokes': _strokes,
+      'thumbnail': thumbnail,
+    });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text("Drawing $name Saved!!!"),
